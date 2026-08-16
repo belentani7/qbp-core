@@ -26,3 +26,8 @@ coverage.xml
 *~
 .DS_Store
 Thumbs.db
+
+.pytest_cache/
+*.egg-info/
+.coverage/
+htmlcov/
