@@ -1,6 +1,6 @@
-# qbp-core
+﻿# qbp-core
 
-Core SDK for the **Quadrachy Binding Protocol** — a structured format for defining, validating, and quality-checking AI-generated assets across four consistency dimensions: identity fidelity, temporal consistency, PBR validity, and aesthetic coherence.
+Core SDK for the **Quadrachy Binding Protocol** ÔÇö a structured format for defining, validating, and quality-checking AI-generated assets across four consistency dimensions: identity fidelity, temporal consistency, PBR validity, and aesthetic coherence.
 
 ## Installation
 
@@ -123,13 +123,13 @@ corrected, patches = auto_correct(report, manifest, max_iterations=3)
 
 ```
 QBPError
-├── ManifestValidationError
-├── ManifestNotFoundError
-├── QAReportParseError
-├── PatchApplicationError
-├── ControlSignalError
-├── ScoringError
-└── InvalidWeightError
+Ôö£ÔöÇÔöÇ ManifestValidationError
+Ôö£ÔöÇÔöÇ ManifestNotFoundError
+Ôö£ÔöÇÔöÇ QAReportParseError
+Ôö£ÔöÇÔöÇ PatchApplicationError
+Ôö£ÔöÇÔöÇ ControlSignalError
+Ôö£ÔöÇÔöÇ ScoringError
+ÔööÔöÇÔöÇ InvalidWeightError
 ```
 
 All errors carry a `.code` string and optional `.detail` dict.
@@ -137,7 +137,7 @@ All errors carry a `.code` string and optional `.detail` dict.
 ## Development
 
 ```bash
-git clone https://github.com/quadrachy/qbp-core.git
+git clone https://github.com/belentani7/qbp-core.git
 cd qbp-core
 pip install -e ".[dev]"
 pytest
