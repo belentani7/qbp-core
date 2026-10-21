@@ -163,6 +163,12 @@ def auto_correct(
             break
 
         candidate = patch.apply(current)
+        # Ignore the audit entry when deciding whether the underlying asset
+        # actually changed; stale suggestions must not manufacture progress.
+        before = {k: v for k, v in current.items() if k != "_patch_history"}
+        after = {k: v for k, v in candidate.items() if k != "_patch_history"}
+        if before == after:
+            break
         if validator is not None:
             errors = validator(candidate)
             if errors:
