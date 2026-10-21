@@ -58,3 +58,17 @@ def test_negative_iterations_rejected(sample_qa_report_failing, sample_manifest)
     with pytest.raises(ValueError):
         auto_correct(QAReport.parse(sample_qa_report_failing),
                      sample_manifest, max_iterations=-1)
+
+
+def test_reassessment_stops_when_changes_are_only_history(sample_qa_report_failing,
+                                                          sample_manifest):
+    report = QAReport.parse(sample_qa_report_failing)
+    result, patches = auto_correct(
+        report,
+        sample_manifest,
+        max_iterations=10,
+        reassess=lambda _: report,
+    )
+    assert len(patches) == 1
+    assert len(result["_patch_history"]) == 1
+    assert len([c for c in result["controls"] if c["type"] == "reference"]) == 1
