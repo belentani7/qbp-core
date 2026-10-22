@@ -164,3 +164,38 @@ class TestBlend:
         assert blended["type"] == "blended"
         assert blended["weight"] == 0.9
         assert blended["type_weights"]["pose"] == 1.0
+
+
+
+@pytest.mark.parametrize("weight", [float("nan"), float("inf"), -float("inf"), True, "0.5", None])
+def test_create_rejects_nonfinite_or_non_numeric_weight(weight):
+    assert ControlSignal.validate_weight(weight) is False
+    with pytest.raises(InvalidWeightError):
+        ControlSignal.create("depth", weight)
+
+
+@pytest.mark.parametrize("weight", [float("nan"), float("inf"), -float("inf"), -0.1, 1.1, True, "0.8"])
+def test_blend_rejects_invalid_child_weights(weight):
+    with pytest.raises(InvalidWeightError):
+        ControlSignal.blend([{"type": "depth", "weight": weight}])
+
+
+def test_blend_rejects_noncanonical_types_or_missing_weights():
+    with pytest.raises(ControlSignalError, match="Unknown control type"):
+        ControlSignal.blend([{"type": "not-a-control", "weight": 0.5}])
+    with pytest.raises(ControlSignalError, match="missing its weight"):
+        ControlSignal.blend([{"type": "depth"}])
+    with pytest.raises(ControlSignalError, match="object"):
+        ControlSignal.blend(["depth"])
+
+
+def test_blend_copies_nested_metadata_instead_of_aliasing_caller():
+    signals = [{"type": "depth", "weight": 0.5, "metadata": {"tags": ["original"]}}]
+    result = ControlSignal.blend(signals)
+    signals[0]["metadata"]["tags"].append("later")
+    assert result["children"][0]["metadata"]["tags"] == ["original"]
+
+
+def test_blend_rejects_nonjson_signal_metadata():
+    with pytest.raises(ControlSignalError, match="JSON-serializable"):
+        ControlSignal.blend([{"type": "depth", "weight": 0.5, "metadata": {"value": float("nan")}}])
