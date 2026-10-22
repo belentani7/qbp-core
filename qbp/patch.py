@@ -139,49 +139,59 @@ def auto_correct(
     *,
     max_iterations: int = 3,
     validator: Any = None,
+    reassess: Any = None,
 ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
-    """Iteratively apply corrections until the manifest passes or iteration limit.
+    """Apply verified corrections without manufacturing improvement.
 
-    Parameters
-    ----------
-    qa_report:
-        Initial QA report.
-    manifest:
-        Current manifest dict.
-    max_iterations:
-        Maximum correction rounds.
-    validator:
-        Optional callable ``(manifest) -> list[str]`` for structural validation
-        between rounds.
-
-    Returns
-    -------
-    tuple[dict, list[dict]]
-        (corrected_manifest, list_of_applied_patches)
+    An unchanged QA report is evidence about the ORIGINAL artifact only.
+    Reapplying it creates duplicate controls/history, so iterative runs
+    require a callable `reassess(candidate) -> QAReport` to obtain fresh
+    measurements. Each candidate is validated before being committed.
     """
+    if type(max_iterations) is not int or max_iterations < 0:
+        raise ValueError("max_iterations must be a non-negative integer")
     current = copy.deepcopy(manifest)
     applied_patches: list[dict[str, Any]] = []
+    report = qa_report
+    # Track actual content, not _patch_history, to break A -> B -> A
+    # oscillations produced by successive model assessments.
+    visited = [{k: copy.deepcopy(v) for k, v in current.items()
+                if k != "_patch_history"}]
 
     for iteration in range(max_iterations):
-        if not qa_report.needs_regeneration():
+        if not report.needs_regeneration():
             break
 
-        patch = CorrectionPatch.from_report(qa_report, current)
+        patch = CorrectionPatch.from_report(report, current)
         if not patch.operations:
             break
 
-        current = patch.apply(current)
+        candidate = patch.apply(current)
+        # Ignore the audit entry when deciding whether the underlying asset
+        # actually changed; stale suggestions must not manufacture progress.
+        before = {k: v for k, v in current.items() if k != "_patch_history"}
+        after = {k: v for k, v in candidate.items() if k != "_patch_history"}
+        if before == after or after in visited:
+            break
+        if validator is not None:
+            errors = validator(candidate)
+            if errors:
+                break  # Keep the last valid manifest, do not return invalid work.
+
+        if candidate == current:
+            break
+        current = candidate
+        visited.append(copy.deepcopy(after))
         applied_patches.append({
             "iteration": iteration,
-            "operations": patch.operations,
-            "pre_score": qa_report.overall_score(),
+            "operations": copy.deepcopy(patch.operations),
+            "pre_score": report.overall_score(),
         })
-
-        # Structural validation between rounds
-        if validator is not None:
-            errors = validator(current)
-            if errors:
-                break
+        if reassess is None:
+            break  # Never reuse stale QA results to claim multiple fixes.
+        report = reassess(current)
+        if not isinstance(report, QAReport):
+            raise TypeError("reassess must return a QAReport")
 
     return current, applied_patches
 
@@ -299,9 +309,13 @@ def _aesthetic_corrections(
 
 def _set_nested(d: dict[str, Any], path: str, value: Any) -> None:
     """Set a value in a nested dict using a dot-separated path."""
+    if not isinstance(path, str) or not path or any(not segment for segment in path.split(".")):
+        raise PatchApplicationError(f"Invalid manifest path: {path!r}")
     keys = path.split(".")
     for key in keys[:-1]:
         d = d.setdefault(key, {})
+        if not isinstance(d, dict):
+            raise PatchApplicationError(f"Cannot traverse non-object section: {key}")
     d[keys[-1]] = value
 
 
@@ -312,6 +326,8 @@ def _add_nested(d: dict[str, Any], path: str, value: Any) -> None:
 
 def _remove_nested(d: dict[str, Any], path: str) -> None:
     """Remove a value from a nested dict using a dot-separated path."""
+    if not isinstance(path, str) or not path or any(not segment for segment in path.split(".")):
+        raise PatchApplicationError(f"Invalid manifest path: {path!r}")
     keys = path.split(".")
     for key in keys[:-1]:
         if key not in d:
