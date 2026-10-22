@@ -43,8 +43,8 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/quadrachy/qbp-core"
-Repository = "https://github.com/quadrachy/qbp-core"
+Homepage = "https://github.com/belentani7/qbp-core"
+Repository = "https://github.com/belentani7/qbp-core"
 
 [tool.hatch.build.targets.wheel]
 packages = ["qbp"]
