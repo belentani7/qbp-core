@@ -148,11 +148,15 @@ def auto_correct(
     require a callable `reassess(candidate) -> QAReport` to obtain fresh
     measurements. Each candidate is validated before being committed.
     """
-    if max_iterations < 0:
-        raise ValueError("max_iterations must be non-negative")
+    if type(max_iterations) is not int or max_iterations < 0:
+        raise ValueError("max_iterations must be a non-negative integer")
     current = copy.deepcopy(manifest)
     applied_patches: list[dict[str, Any]] = []
     report = qa_report
+    # Track actual content, not _patch_history, to break A -> B -> A
+    # oscillations produced by successive model assessments.
+    visited = [{k: copy.deepcopy(v) for k, v in current.items()
+                if k != "_patch_history"}]
 
     for iteration in range(max_iterations):
         if not report.needs_regeneration():
@@ -167,7 +171,7 @@ def auto_correct(
         # actually changed; stale suggestions must not manufacture progress.
         before = {k: v for k, v in current.items() if k != "_patch_history"}
         after = {k: v for k, v in candidate.items() if k != "_patch_history"}
-        if before == after:
+        if before == after or after in visited:
             break
         if validator is not None:
             errors = validator(candidate)
@@ -177,6 +181,7 @@ def auto_correct(
         if candidate == current:
             break
         current = candidate
+        visited.append(copy.deepcopy(after))
         applied_patches.append({
             "iteration": iteration,
             "operations": copy.deepcopy(patch.operations),
