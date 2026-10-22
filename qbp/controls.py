@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import copy
 import hashlib
 import json
+import math
+from numbers import Real
 from dataclasses import dataclass, field, asdict
 from typing import Any
 
@@ -69,7 +72,7 @@ class ControlSignal:
     @staticmethod
     def validate_weight(weight: float) -> bool:
         """Return ``True`` if *weight* is in the valid range ``[0, 1]``."""
-        return 0.0 <= weight <= 1.0
+        return isinstance(weight, Real) and not isinstance(weight, bool) and math.isfinite(float(weight)) and 0.0 <= weight <= 1.0
 
     @staticmethod
     def _validate_weight(weight: float) -> None:
@@ -106,21 +109,30 @@ class ControlSignal:
         if not signals:
             raise ControlSignalError("Cannot blend an empty list of signals")
 
-        total_weight = sum(s.get("weight", 0) for s in signals)
+        # Only validated, finite, canonical controls can contribute.
+        # This prevents negative, NaN and infinity weights from corrupting
+        # normalized scores and avoids ambiguous composite signals.
+        type_weights: dict[str, float] = {}
+        total_weight = 0.0
+        for sig in signals:
+            if not isinstance(sig, dict):
+                raise ControlSignalError("Each signal must be an object")
+            ControlSignal._validate_type(sig.get("type"))
+            if "weight" not in sig:
+                raise ControlSignalError("Signal is missing its weight")
+            ControlSignal._validate_weight(sig["weight"])
+            t = sig["type"]
+            w = float(sig["weight"])
+            total_weight += w
+            type_weights[t] = type_weights.get(t, 0.0) + w
+
         if total_weight == 0:
             raise ControlSignalError("Total blended weight must be > 0")
-
-        # Group by type and compute weighted contributions
-        type_weights: dict[str, float] = {}
-        for sig in signals:
-            t = sig["type"]
-            w = sig.get("weight", 0)
-            type_weights[t] = type_weights.get(t, 0) + w
 
         blended = {
             "type": "blended",
             "weight": round(min(total_weight, 1.0), 4),
-            "children": [dict(s) for s in signals],
+            "children": copy.deepcopy(signals),
             "type_weights": {k: round(v / total_weight, 4) for k, v in type_weights.items()},
             "signal_hash": _hash_signals(signals),
         }
@@ -129,5 +141,10 @@ class ControlSignal:
 
 def _hash_signals(signals: list[dict[str, Any]]) -> str:
     """Deterministic hash of a list of control signals for change detection."""
-    canonical = json.dumps(signals, sort_keys=True, separators=(",", ":"))
+    try:
+        canonical = json.dumps(
+            signals, sort_keys=True, separators=(",", ":"), allow_nan=False,
+        )
+    except (TypeError, ValueError) as exc:
+        raise ControlSignalError("Signals must contain JSON-serializable values") from exc
     return hashlib.sha256(canonical.encode()).hexdigest()[:16]
