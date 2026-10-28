@@ -188,7 +188,7 @@ class BindingManifest:
         with p.open("r", encoding="utf-8") as fh:
             data = json.load(fh)
         instance = cls.__new__(cls)
-        instance._data = data  # type: ignore[attr-defined]
+        instance._data = data
         return instance
 
     @property
