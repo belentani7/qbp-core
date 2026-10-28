@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 import json
 import uuid
 from datetime import datetime, timezone
@@ -93,12 +94,14 @@ class BindingManifest:
     # ── validation ─────────────────────────────────────────────────────────
 
     @staticmethod
-    def validate(manifest: dict[str, Any]) -> list[str]:
+    def validate(manifest: Any) -> list[str]:
         """Validate a manifest dict and return a list of error strings.
 
         An empty list means the manifest is valid.
         """
         errors: list[str] = []
+        if not isinstance(manifest, dict):
+            return ["Manifest must be a dict"]
 
         # version
         if manifest.get("version") != MANIFEST_VERSION:
@@ -106,7 +109,7 @@ class BindingManifest:
 
         # asset_type
         at = manifest.get("asset_type", "")
-        if at not in REQUIRED_ASSET_TYPES:
+        if not isinstance(at, str) or at not in REQUIRED_ASSET_TYPES:
             errors.append(
                 f"Invalid asset_type '{at}'. Must be one of: {', '.join(sorted(REQUIRED_ASSET_TYPES))}"
             )
@@ -161,6 +164,14 @@ class BindingManifest:
             raise ManifestValidationError(errors)
 
     # ── serialisation ──────────────────────────────────────────────────────
+
+    @classmethod
+    def from_dict(cls, manifest: dict[str, Any]) -> BindingManifest:
+        """Wrap a validated manifest for file I/O without sharing mutable state."""
+        cls.validate_strict(manifest)
+        instance = cls.__new__(cls)
+        instance._data = copy.deepcopy(manifest)
+        return instance
 
     @classmethod
     def from_json(cls, path: str | Path) -> BindingManifest:
