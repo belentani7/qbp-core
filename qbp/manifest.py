@@ -40,6 +40,8 @@ class BindingManifest:
     >>> assert not errors
     """
 
+    _data: dict[str, Any]
+
     # ── creation ───────────────────────────────────────────────────────────
 
     @staticmethod
@@ -192,7 +194,7 @@ class BindingManifest:
     @property
     def data(self) -> dict[str, Any]:
         """Access the underlying manifest dict."""
-        return self._data  # type: ignore[attr-defined]
+        return self._data
 
     def to_json(self, path: str | Path) -> None:
         """Write the manifest to a JSON file."""
