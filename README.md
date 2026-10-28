@@ -52,7 +52,7 @@ manifest["controls"] = controls
 
 # 4. Serialise
 BindingManifest.validate_strict(manifest)  # raises ManifestValidationError on failure
-manifest_obj = BindingManifest.create(**manifest)  # wrap for file I/O
+manifest_obj = BindingManifest.from_dict(manifest)  # validate and wrap for file I/O
 manifest_obj.to_json("output/manifest.json")
 loaded = BindingManifest.from_json("output/manifest.json")
 
@@ -70,7 +70,7 @@ report = QAReport.parse({
     },
 })
 print(report.summary())
-# QA Report [unknown]: score=0.74, checks=1/2 passed, regen=no
+# QA Report [unknown]: score=0.76, checks=1/2 passed, regen=no
 
 # 6. Auto-correct
 corrected, patches = auto_correct(report, manifest, max_iterations=3)
@@ -85,6 +85,7 @@ corrected, patches = auto_correct(report, manifest, max_iterations=3)
 | `create(asset_type, brief, identity, geometry, motion, atmosphere, *, tags, controls)` | Build a manifest dict |
 | `validate(manifest)` | Returns `list[str]` of errors (empty = valid) |
 | `validate_strict(manifest)` | Raises `ManifestValidationError` on failure |
+| `from_dict(manifest)` | Validate and wrap a manifest dict for file I/O |
 | `from_json(path)` | Load manifest from JSON file |
 | `to_json(path)` | Write manifest to JSON file |
 | `generate_controls(types, weights)` | Generate control signal dicts |
