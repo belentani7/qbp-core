@@ -110,9 +110,8 @@ class BindingManifest:
         # asset_type
         at = manifest.get("asset_type", "")
         if not isinstance(at, str) or at not in REQUIRED_ASSET_TYPES:
-            errors.append(
-                f"Invalid asset_type '{at}'. Must be one of: {', '.join(sorted(REQUIRED_ASSET_TYPES))}"
-            )
+            allowed = ", ".join(sorted(REQUIRED_ASSET_TYPES))
+            errors.append(f"Invalid asset_type '{at}'. Must be one of: {allowed}")
 
         # brief
         brief = manifest.get("brief", "")
@@ -149,7 +148,7 @@ class BindingManifest:
                         f"controls[{i}] has unknown type '{ctrl_type}'"
                     )
                 weight = ctrl.get("weight", -1)
-                if not isinstance(weight, (int, float)) or not ControlSignal.validate_weight(weight):
+                if not ControlSignal.validate_weight(weight):
                     errors.append(
                         f"controls[{i}] has invalid weight: {weight!r}"
                     )
@@ -224,7 +223,10 @@ class BindingManifest:
         """
         if len(control_types) != len(weights):
             raise ManifestValidationError(
-                [f"control_types ({len(control_types)}) and weights ({len(weights)}) must have equal length"]
+                [
+                    f"control_types ({len(control_types)}) and "
+                    f"weights ({len(weights)}) must have equal length"
+                ]
             )
         return [
             ControlSignal.create(ct, w)

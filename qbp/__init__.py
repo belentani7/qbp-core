@@ -22,8 +22,8 @@ from .errors import (
     ManifestNotFoundError,
     ManifestValidationError,
     PatchApplicationError,
-    QBPError,
     QAReportParseError,
+    QBPError,
     ScoringError,
 )
 from .manifest import BindingManifest
