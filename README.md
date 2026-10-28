@@ -70,7 +70,7 @@ report = QAReport.parse({
     },
 })
 print(report.summary())
-# QA Report [unknown]: score=0.74, checks=1/2 passed, regen=no
+# QA Report [unknown]: score=0.76, checks=1/2 passed, regen=no
 
 # 6. Auto-correct
 corrected, patches = auto_correct(report, manifest, max_iterations=3)
