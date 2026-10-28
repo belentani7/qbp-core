@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pytest
 
+
 def test_readme_public_api_imports() -> None:
     from qbp import BindingManifest, ControlSignal, CorrectionPatch, QAReport, auto_correct
 
