@@ -1,17 +1,21 @@
-﻿# qbp-core
+# qbp-core
 
-Core SDK for the **Quadrachy Binding Protocol** ÔÇö a structured format for defining, validating, and quality-checking AI-generated assets across four consistency dimensions: identity fidelity, temporal consistency, PBR validity, and aesthetic coherence.
+Core SDK for the **Quadrachy Binding Protocol** — a structured format for defining, validating, and quality-checking AI-generated assets across four consistency dimensions: identity fidelity, temporal consistency, PBR validity, and aesthetic coherence.
 
 ## Installation
 
+Install from source (not yet published to PyPI):
+
 ```bash
-pip install qbp-core
+git clone https://github.com/belentani7/qbp-core.git
+cd qbp-core
+pip install -e .
 
 # With ML scoring backends (ArcFace, CLIP, LPIPS):
-pip install qbp-core[ml]
+pip install -e ".[ml]"
 
 # Development:
-pip install qbp-core[dev]
+pip install -e ".[dev]"
 ```
 
 **Requires Python >= 3.10.**
@@ -19,7 +23,10 @@ pip install qbp-core[dev]
 ## Quick Start
 
 ```python
-from qbp import BindingManifest, QAReport, CorrectionPatch, ControlSignal, auto_correct
+from qbp.manifest import BindingManifest
+from qbp.qa import QAReport
+from qbp.patch import CorrectionPatch, auto_correct
+from qbp.controls import ControlSignal
 
 # 1. Create a binding manifest
 manifest = BindingManifest.create(
@@ -78,7 +85,8 @@ corrected, patches = auto_correct(report, manifest, max_iterations=3)
 | `create(asset_type, brief, identity, geometry, motion, atmosphere, *, tags, controls)` | Build a manifest dict |
 | `validate(manifest)` | Returns `list[str]` of errors (empty = valid) |
 | `validate_strict(manifest)` | Raises `ManifestValidationError` on failure |
-| `from_dict(manifest)` | Validate and wrap a manifest dict for file I/O |\r\n| `from_json(path)` | Load manifest from JSON file |
+| `from_dict(manifest)` | Validate and wrap a manifest dict for file I/O |
+| `from_json(path)` | Load manifest from JSON file |
 | `to_json(path)` | Write manifest to JSON file |
 | `generate_controls(types, weights)` | Generate control signal dicts |
 
@@ -123,13 +131,13 @@ corrected, patches = auto_correct(report, manifest, max_iterations=3)
 
 ```
 QBPError
-Ôö£ÔöÇÔöÇ ManifestValidationError
-Ôö£ÔöÇÔöÇ ManifestNotFoundError
-Ôö£ÔöÇÔöÇ QAReportParseError
-Ôö£ÔöÇÔöÇ PatchApplicationError
-Ôö£ÔöÇÔöÇ ControlSignalError
-Ôö£ÔöÇÔöÇ ScoringError
-ÔööÔöÇÔöÇ InvalidWeightError
+├── ManifestValidationError
+├── ManifestNotFoundError
+├── QAReportParseError
+├── PatchApplicationError
+├── ControlSignalError
+├── ScoringError
+└── InvalidWeightError
 ```
 
 All errors carry a `.code` string and optional `.detail` dict.
